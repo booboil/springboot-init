@@ -2,11 +2,16 @@ package com.booboil.springbootinit.service.impl;
 
 import static com.booboil.springbootinit.constant.UserConstant.USER_LOGIN_STATE;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.booboil.springbootinit.common.CommonUtils;
 import com.booboil.springbootinit.constant.CommonConstant;
 import com.booboil.springbootinit.mapper.UserMapper;
+import com.booboil.springbootinit.service.excel.impl.SystemLogExportLogExcel;
+import com.booboil.springbootinit.model.dto.excel.TimeConditionRange;
 import com.booboil.springbootinit.service.UserService;
 import com.booboil.springbootinit.common.ErrorCode;
 import com.booboil.springbootinit.exception.BusinessException;
@@ -16,13 +21,23 @@ import com.booboil.springbootinit.model.enums.UserRoleEnum;
 import com.booboil.springbootinit.model.vo.LoginUserVO;
 import com.booboil.springbootinit.model.vo.UserVO;
 import com.booboil.springbootinit.utils.SqlUtils;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
+import javax.annotation.Resource;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import lombok.extern.slf4j.Slf4j;
 import me.chanjar.weixin.common.bean.WxOAuth2UserInfo;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.poi.ss.usermodel.Workbook;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
@@ -41,6 +56,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
      * 盐值，混淆密码
      */
     private static final String SALT = "booboil";
+
+    @Resource
+    private UserService userService;
+
+    @Resource
+    private UserMapper userMapper;
 
     @Override
     public long userRegister(String userAccount, String userPassword, String checkPassword) {
@@ -268,5 +289,45 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         queryWrapper.orderBy(SqlUtils.validSortField(sortField), sortOrder.equals(CommonConstant.SORT_ORDER_ASC),
                 sortField);
         return queryWrapper;
+    }
+
+    @Override
+    public void exportLog(TimeConditionRange timeConditionRange, HttpServletRequest request, HttpServletResponse response) throws Exception {
+        LambdaQueryWrapper<User> condition = Wrappers.<User>lambdaQuery();
+        if (timeConditionRange != null) {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            if (timeConditionRange.getLeft() != null && !timeConditionRange.getLeft().isEmpty()) {
+                condition.ge(User::getCreateTime, sdf.parse(timeConditionRange.getLeft()));
+            }
+            if (timeConditionRange.getRight() != null && !timeConditionRange.getRight().isEmpty()) {
+                Date right = sdf.parse(timeConditionRange.getRight());
+                // 结束时间需增加一天，包含结束日期当天数据
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTime(right);
+                calendar.add(Calendar.DAY_OF_YEAR, 1);
+                right = calendar.getTime();
+                // 设置查询条件,小于等于结束时间
+                condition.le(User::getCreateTime, right);
+            }
+        }
+
+        //查询条件的数据
+        List<User> dataList = userMapper.selectList(condition.orderByDesc(User::getCreateTime));
+
+        // 创建Excel模板并生成Excel文件
+        SystemLogExportLogExcel template = new SystemLogExportLogExcel(dataList);
+        Workbook wb = template.generateExcel(request);
+        // 设置响应类型和文件名
+        response.setContentType("application/vnd.ms-excel;charset=utf-8");
+        String fileName = "userLog_template.xlsx";
+        // 根据请求信息获取下载文件名
+        String downloadName = CommonUtils.getDownloadFileName(request, fileName);
+        response.setHeader("Content-Disposition", "attachment;filename=\"" + downloadName + "\"");
+        response.addHeader("Access-Control-Expose-Headers", "Content-Disposition, Content-Type");
+        // 将生成的Excel文件写入响应输出流中
+        ServletOutputStream out = response.getOutputStream();
+        wb.write(out);
+        out.flush();
+        out.close();
     }
 }

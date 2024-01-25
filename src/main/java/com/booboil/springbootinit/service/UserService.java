@@ -2,12 +2,16 @@ package com.booboil.springbootinit.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.booboil.springbootinit.model.dto.excel.TimeConditionRange;
 import com.booboil.springbootinit.model.dto.user.UserQueryRequest;
 import com.booboil.springbootinit.model.entity.User;
 import com.booboil.springbootinit.model.vo.LoginUserVO;
 import com.booboil.springbootinit.model.vo.UserVO;
+
 import java.util.List;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import me.chanjar.weixin.common.bean.WxOAuth2UserInfo;
 
 /**
@@ -118,4 +122,11 @@ public interface UserService extends IService<User> {
      */
     QueryWrapper<User> getQueryWrapper(UserQueryRequest userQueryRequest);
 
+    /**
+     * 导出系统日志
+     * @param timeConditionRange
+     * @param request
+     * @param response
+     */
+    void exportLog(TimeConditionRange timeConditionRange, HttpServletRequest request, HttpServletResponse response) throws Exception;
 }
