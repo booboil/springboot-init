@@ -58,9 +58,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     private static final String SALT = "booboil";
 
     @Resource
-    private UserService userService;
-
-    @Resource
     private UserMapper userMapper;
 
     @Override

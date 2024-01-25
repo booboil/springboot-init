@@ -61,7 +61,7 @@ public class SystemLogExportLogExcel implements BaseExcelTemplate {
             if (row == null) {
                 row = sheet.createRow(rowNum);
             }
-            for (int i = 0; i < 7; i++) {
+            for (int i = 0; i < 5; i++) {
                 XSSFCell cell = row.getCell(i);
                 if (cell == null) {
                     cell = row.createCell(i);
@@ -73,8 +73,6 @@ public class SystemLogExportLogExcel implements BaseExcelTemplate {
             row.getCell(2).setCellValue(data.getUserName());
             row.getCell(3).setCellValue(data.getUserAccount());
             row.getCell(4).setCellValue(data.getUserRole());
-            row.getCell(5).setCellValue(data.getCreateTime());
-            row.getCell(6).setCellValue(data.getUpdateTime());
 
             rowNum++;
         }
