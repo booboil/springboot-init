@@ -34,7 +34,7 @@ public class SystemLogExportLogExcel implements BaseExcelTemplate {
 
     @Override
     public Workbook generateExcel(HttpServletRequest request) throws Exception {
-        ClassPathResource classPathResource = new ClassPathResource("项目大盘表导出日志_导出模板.xlsx");
+        ClassPathResource classPathResource = new ClassPathResource("/userLog_template.xlsx");
         InputStream inputStream = classPathResource.getInputStream();
         // 读取源文件
         XSSFWorkbook workbook = new XSSFWorkbook(inputStream);
